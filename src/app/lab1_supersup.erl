@@ -1,7 +1,7 @@
 -module(lab1_supersup).
 -behaviour(supervisor).
 
--export([start_link/0, init/1]).
+-export([start_link/0, init/1, get_child/1]).
 
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
@@ -15,40 +15,64 @@ init([]) ->
 		period => MaxTime
 	},
 
-    WorkerSup = #{
-		id => lab1_worker_sup,
-	    start => {lab1_worker_sup, start_link, []},
+    Filter = #{
+		id => lab2_filter,
+	    start => {lab2_filter, start_link, []}, 
+		restart => permanent,
+	    shutdown => 2000, 
+		type => worker, 
+		modules => [lab2_filter]
+	},
+
+	PoolSupER = #{
+		id => lab1_pool_sup_er,
+	    start => {lab1_pool_sup, start_link, [worker5]},
 	    restart => permanent, 
 		shutdown => 2000,
 	    type => supervisor, 
-		modules => [lab1_worker_sup]
+		modules => [lab1_pool_sup]
 	},
-    Router = #{
-		id => lab1_router,
-	    start => {lab1_router, start_link, []}, 
-		restart => permanent,
-	    shutdown => 2000, 
-		type => worker, 
-		modules => [lab1_router]
-	},
-    Scaler = #{
-		id => lab1_scaler,
-	    start => {lab1_scaler, start_link, []}, 
-		restart => permanent,
-	    shutdown => 2000, 
-		type => worker, 
-		modules => [lab1_scaler]
-	},
-    Stream1 = "/tweets/1",
-    Collector1 = #{id => lab1_collector1,
-	      start => {lab1_collector, start, [Stream1]},
-	      restart => permanent, shutdown => 2000, type => worker,
-	      modules => [lab1_collector]},
-    Stream2 = "/tweets/2",
-    Collector2 = #{id => lab1_collector2,
-	      start => {lab1_collector, start, [Stream2]},
-	      restart => permanent, shutdown => 2000, type => worker,
-	      modules => [lab1_collector]},
 
-    ChildSpecs = [WorkerSup, Router, Scaler, Collector1, Collector2],
+	PoolSupSS = #{
+		id => lab1_pool_sup_ss,
+	    start => {lab1_pool_sup, start_link, [worker]},
+	    restart => permanent, 
+		shutdown => 2000,
+	    type => supervisor, 
+		modules => [lab1_pool_sup]
+	},
+
+    Stream1 = "/tweets/1",
+    Collector1 = #{
+		id => lab1_collector1,
+	    start => {lab1_collector, start_link, [Stream1]},
+		restart => permanent, 
+		shutdown => 2000, 
+		type => worker,
+	    modules => [lab1_collector]
+	},
+
+    Stream2 = "/tweets/2",
+    Collector2 = #{
+		id => lab1_collector2,
+	    start => {lab1_collector, start_link, [Stream2]},
+		restart => permanent, 
+		shutdown => 2000, 
+		type => worker,
+	    modules => [lab1_collector]
+	},
+
+    ChildSpecs = [PoolSupER, PoolSupSS, Filter, Collector1, Collector2],
     {ok, {SupFlags, ChildSpecs}}.
+
+
+get_child(SiblingId) ->
+    Siblings = supervisor:which_children(?MODULE),
+    {value, {_, Child, _, _}} = lists:search(
+        fun(Sibling) ->
+            {Id, _, _, _} = Sibling,
+            SiblingId =:= Id
+        end, 
+        Siblings
+    ),
+    Child.
