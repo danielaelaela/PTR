@@ -1,28 +1,31 @@
 -module(lab1_router).
 -behaviour(gen_server).
 
--export([start_link/0, init/1, route/1, handle_cast/2]).
+-export([start_link/1, init/1, route/2, handle_cast/2]).
 
--define(WORKER_SUP, lab1_worker_sup).
--define(SCALER, lab1_scaler).
 
-start_link() ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link(Parent) ->
+    gen_server:start_link(?MODULE, [Parent], []).
 
-init([]) ->
+init([Parent]) ->
     io:format("~p: ~p~n", ["Router", self()]),
-    {ok, 0}.
+    {ok, {0, Parent}}.
 
-route(Tweet) ->
-    ?SCALER:routed(),
-    gen_server:cast(?MODULE, {tweet, Tweet}).
+route(Pid, Tweet) ->
+    gen_server:cast(Pid, {tweet, Tweet}).
 
 handle_cast({tweet, Tweet}, State) ->
-    WorkerPids = supervisor:which_children(?WORKER_SUP),
+    {WorkerIdx, Parent} = State,
+    Scaler = lab1_pool_sup:get_child(Parent, lab1_scaler),
+    WorkerSup = lab1_pool_sup:get_child(Parent, lab1_worker_sup),
+
+    lab1_scaler:scale(Scaler),
+
+    WorkerPids = supervisor:which_children(WorkerSup),
     TotalChildren = length(WorkerPids),
 
-    {_, WorkerPid, _, _} = lists:nth((State rem TotalChildren) + 1, WorkerPids),
+    {_, WorkerPid, _, _} = lists:nth((WorkerIdx rem TotalChildren) + 1, WorkerPids),
     gen_server:cast(WorkerPid, Tweet),
     
-    NewState = (State + 1) rem TotalChildren,
-    {noreply, NewState}.
+    NewWorkerIdx = (WorkerIdx + 1) rem TotalChildren,
+    {noreply, {NewWorkerIdx, Parent}}.
