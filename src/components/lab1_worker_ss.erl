@@ -18,15 +18,16 @@ handle_call(_Request, _From, _State) ->
     {noreply, _State}.
 
 handle_cast({work, IdedTweet}, State) ->
-    % sleep(),
-    {Id, Tweet} = IdedTweet,
+    sleep(),
+    #{id := Id, tweet := Tweet} = IdedTweet,
     #{
         <<"text">> := Text
     } = Tweet,
     TweetSS = compute(Text),
-    lab2_aggregator:aggregate({Id, TweetSS}),
+    lab2_aggregator:aggregate(#{id => Id, ss => TweetSS}),
     % io:format("~p: id ~p tweetSS ~p~n", [self(), Id, TweetSS]),
     {noreply, State}.
+
 
 compute(Text) ->
     TextList = unicode:characters_to_list(Text, utf8),

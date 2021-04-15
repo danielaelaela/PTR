@@ -18,8 +18,11 @@ handle_call(_Request, _From, _State) ->
     {noreply, _State}.
 
 handle_cast({work, IdedTweet}, State) ->
-    % sleep(),
-    {Id, Tweet} = IdedTweet,
+    sleep(),
+    #{
+        id := Id, 
+        tweet := Tweet
+    } = IdedTweet,
     #{
         <<"retweet_count">> := Retweets,
         <<"favorite_count">> := Favourites,
@@ -28,9 +31,10 @@ handle_cast({work, IdedTweet}, State) ->
         }
     } = Tweet,
     TweetER = compute(Favourites, Retweets, Followers),
-    lab2_aggregator:aggregate({Id, TweetER}),
+    lab2_aggregator:aggregate(#{id => Id, er => TweetER}),
     % io:format("~p: id ~p tweetER ~p~n", [self(), Id, TweetER]),
     {noreply, State}.
+
 
 compute(Favourites, Retweets, Followers) when Followers =/= 0 ->
     (Favourites + Retweets) / Followers;

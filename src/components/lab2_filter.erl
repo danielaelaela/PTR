@@ -1,7 +1,7 @@
 -module(lab2_filter).
 -behaviour(gen_server).
 
--export([start_link/0, init/1, filter/1, handle_cast/2]).
+-export([start_link/0, init/1, filter/1, handle_call/3, handle_cast/2]).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -14,6 +14,9 @@ filter(Event) ->
     gen_server:cast(?MODULE, {event, Event}).
 
 
+handle_call(_, _, State) ->
+    {noreply, State}.
+
 handle_cast({event, Event}, State) ->
     EventMap = shotgun:parse_event(Event),
     #{data := Data} = EventMap,
@@ -22,19 +25,17 @@ handle_cast({event, Event}, State) ->
     process(Data, State, IsJson),
     {noreply, State + 2}.
 
+
 process(Data, State, IsJson) when IsJson == true ->
     Json = jsx:decode(Data),
-
     #{
         <<"message">> := #{
             <<"tweet">> := Tweet
         }
     } = Json,
-    Retweet = maps:get(<<"retweeted_status">>, Tweet, #{}),
-    % io:format("retweet: ~p~n", [Retweet]),    
 
+    Retweet = maps:get(<<"retweeted_status">>, Tweet, #{}),
     IdedTweets = add_ids(State, [Tweet, Retweet]),
-    % io:format("Idedtweets: ~p~n", [IdedTweets]),    
 
     PoolSupER = lab1_supersup:get_child(lab1_pool_sup_er),
     PoolSupSS = lab1_supersup:get_child(lab1_pool_sup_ss),
@@ -53,7 +54,7 @@ add_ids(Id, Tweets) ->
 add_ids(_, [], IdedTweets) ->
     IdedTweets;
 add_ids(Id, [Tweet|T], IdedTweets) when Tweet =/= #{} -> 
-    IdedTweet = {Id, Tweet},
+    IdedTweet = #{id => Id, tweet => Tweet},
     add_ids(Id + 1, T, [IdedTweet|IdedTweets]);
 add_ids(Id, [Tweet|T], IdedTweets) when Tweet =:= #{} -> 
     add_ids(Id, T, IdedTweets).
