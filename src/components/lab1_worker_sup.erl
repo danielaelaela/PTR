@@ -6,9 +6,7 @@
 start_link(WorkerType) ->
     supervisor:start_link(?MODULE, [WorkerType]).
 
-init([WorkerType]) ->
-    io:format("~p: ~p~n", ["Worker Supervisor", self()]),
-    
+init([WorkerType]) ->    
     MaxRestart = 6,
     MaxTime = 3600,
     SupFlags = #{
@@ -18,21 +16,20 @@ init([WorkerType]) ->
     },
 
     ChildSpec = get_child_spec(WorkerType),
-
     {ok, {SupFlags, [ChildSpec]}}.
 
-get_child_spec(worker) ->
+get_child_spec(workerSS) ->
     #{
-        id => lab1_worker,
-        start => {lab1_worker, start_link, []}, 
+        id => lab1_worker_ss,
+        start => {lab1_worker_ss, start_link, []}, 
         restart => permanent,
         shutdown => 2000, 
         type => worker
     };
-get_child_spec(worker5) ->
+get_child_spec(workerER) ->
     #{
-        id => lab1_worker5,
-        start => {lab1_worker5, start_link, []}, 
+        id => lab2_worker_er,
+        start => {lab2_worker_er, start_link, []}, 
         restart => permanent,
         shutdown => 2000, 
         type => worker

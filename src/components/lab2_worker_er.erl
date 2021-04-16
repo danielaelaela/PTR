@@ -18,7 +18,7 @@ handle_call(_Request, _From, _State) ->
     {noreply, _State}.
 
 handle_cast({work, IdedTweet}, State) ->
-    sleep(),
+    % sleep(),
     #{
         id := Id, 
         tweet := Tweet

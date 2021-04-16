@@ -26,7 +26,7 @@ handle_info({_, _, start}, State) ->
         handle_event => fun (_, _, Event) -> lab2_filter:filter(Event) end
     },
     {ok, _Ref} = shotgun:get(Conn, State, #{}, Options),
-    wait(1000),
+    wait(100000),
     shotgun:close(Conn),
 
     {noreply, State}.

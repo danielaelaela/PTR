@@ -33,7 +33,7 @@ handle_info({_, _, limit}, State) ->
     case length(Batch) of
         ?BATCHSIZE -> 
             lab2_storage:write_batch(Batch),
-            io:format("Batch sent from limit: ~p~n", [length(Batch)]),
+            % io:format("Batch sent from limit: ~p~n", [length(Batch)]),
             erlang:cancel_timer(TimerRef, []), 
             NewTimerRef = erlang:start_timer(5000, self(), timeout),  
             {noreply, {[], NewTimerRef}};
@@ -43,7 +43,7 @@ handle_info({_, _, limit}, State) ->
 handle_info({_, _, timeout}, State) ->
     {Batch, _} = State,
     lab2_storage:write_batch(Batch),
-    io:format("Batch sent from timeout: ~p~n", [length(Batch)]),
+    % io:format("Batch sent from timeout: ~p~n", [length(Batch)]),
 
     NewTimerRef = erlang:start_timer(?TIMELIMIT, self(), timeout),
 

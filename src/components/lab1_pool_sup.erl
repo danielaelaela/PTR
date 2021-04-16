@@ -15,14 +15,15 @@ init([WorkerType]) ->
 		period => MaxTime
 	},
 
-    WorkerSup = #{
-		id => lab1_worker_sup,
-	    start => {lab1_worker_sup, start_link, [WorkerType]},
-	    restart => permanent, 
-		shutdown => 2000,
-	    type => supervisor, 
-		modules => [lab1_worker_sup]
+	Scaler = #{
+		id => lab1_scaler,
+	    start => {lab1_scaler, start_link, [self()]}, 
+		restart => permanent,
+	    shutdown => 2000, 
+		type => worker, 
+		modules => [lab1_scaler]
 	},
+
     Router = #{
 		id => lab1_router,
 	    start => {lab1_router, start_link, [self()]}, 
@@ -31,13 +32,14 @@ init([WorkerType]) ->
 		type => worker, 
 		modules => [lab1_router]
 	},
-    Scaler = #{
-		id => lab1_scaler,
-	    start => {lab1_scaler, start_link, [self()]}, 
-		restart => permanent,
-	    shutdown => 2000, 
-		type => worker, 
-		modules => [lab1_scaler]
+
+	WorkerSup = #{
+		id => lab1_worker_sup,
+	    start => {lab1_worker_sup, start_link, [WorkerType]},
+	    restart => permanent, 
+		shutdown => 2000,
+	    type => supervisor, 
+		modules => [lab1_worker_sup]
 	},
     
     ChildSpecs = [WorkerSup, Router, Scaler],

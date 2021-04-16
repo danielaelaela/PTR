@@ -16,6 +16,7 @@ init([Parent]) ->
 scale(Pid) ->
     gen_server:cast(Pid, scale).
 
+
 handle_call(_, _, State) ->
     {noreply, State}.
 
@@ -35,7 +36,7 @@ handle_info({timeout, _, _}, State) ->
     TotalWorkers = length(WorkerPids),
 
     NrWorkers = RunningAvg div 100 - TotalWorkers + 3,
-    io:format("~p: ~p requests per second. Scaling ~p worker(s).~n", [self(), PerSecond, NrWorkers]),
+    % io:format("~p: ~p requests per second. Scaling ~p worker(s).~n", [self(), PerSecond, NrWorkers]),
     
     scale_pool(WorkerSup, NrWorkers),
     erlang:start_timer(1000, self(), timeout),

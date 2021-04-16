@@ -19,7 +19,7 @@ init([]) ->
     ets:new(?TWEETTABLE, [set, named_table]),
     ets:new(?USERTABLE, [set, named_table]),
     
-    erlang:start_timer(5000, self(), timeout),
+    erlang:start_timer(?LOGTIME, self(), timeout),
     {ok, {}}.
 
 write_batch(Batch) ->
@@ -43,14 +43,13 @@ handle_info({timeout, _, _}, _State) ->
     TweetInfo = ets:info(?TWEETTABLE),
     UserInfo = ets:info(?USERTABLE),
 
-    EventSize = lists:keyfind(size, 1, EventInfo),
-    TweetSize = lists:keyfind(size, 1, TweetInfo),
-    UserSize = lists:keyfind(size, 1, UserInfo),
+    {_, EventSize} = lists:keyfind(size, 1, EventInfo),
+    {_, TweetSize} = lists:keyfind(size, 1, TweetInfo),
+    {_, UserSize} = lists:keyfind(size, 1, UserInfo),
 
-    io:format("Event Storage: ~p~n", [EventSize]),
-    io:format("Tweet Storage: ~p~n", [TweetSize]),
-    io:format("User Storage: ~p~n", [UserSize]),
 
+    io:format("Storage: ~p events, ~p tweets, ~p users~n", [EventSize, TweetSize, UserSize]),
+  
     % io:format("User Storage: ~p~n", [ets:tab2list(?TWEETTABLE)]),
     
     erlang:start_timer(?LOGTIME, self(), timeout),
