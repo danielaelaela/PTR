@@ -7,10 +7,10 @@ start(Stream) ->
     Options = #{
         async => true, 
         async_mode => sse,
-        handle_event => fun (_, _, Tweet) -> lab1_router:route(Tweet) end
+        handle_event => fun (_, _, Tweet) -> lab1_router_spec:route(Tweet) end
     },
     {ok, _Ref} = shotgun:get(Conn, Stream, #{}, Options),
-    wait(100000),
+    wait(150),
     shotgun:close(Conn),
     {ok, self()}.
 

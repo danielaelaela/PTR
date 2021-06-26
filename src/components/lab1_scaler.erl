@@ -31,7 +31,7 @@ handle_info({timeout, _, _}, State) ->
     WorkerPids = supervisor:which_children(?WORKER_SUP),
     TotalWorkers = length(WorkerPids),
 
-    NrWorkers = RunningAvg div 100 - TotalWorkers + 3,
+    NrWorkers = RunningAvg div 100 - TotalWorkers + 10,
     io:format("~p: ~p requests per second. Scaling ~p worker(s).~n", ["Scaler", PerSecond, NrWorkers]),
     
     scale_pool(NrWorkers),
