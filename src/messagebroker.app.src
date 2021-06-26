@@ -1,12 +1,11 @@
-{application, lab1,
+{application, messagebroker,
  [{description, "An OTP application"},
   {vsn, "0.1.0"},
   {registered, []},
-  {mod, {lab1_app, []}},
+  {mod, {messagebroker_app, []}},
   {applications,
    [kernel,
-    stdlib,
-    shotgun
+    stdlib
    ]},
   {env,[]},
   {modules, []},
