@@ -1,0 +1,23 @@
+
+worker5:start_link().
+
+gen_server:cast(<0.91.0>, "Hi").
+
+
+
+c(lab1_worker_spec).
+c(lab1_task).
+
+lab1_worker_spec:start_link().
+lab1_worker_spec:start_link().
+
+c(lab1_router_spec).
+lab1_router_spec:start_link().
+
+lab1_router_spec:route("Hi").
+lab1_router_spec:route("Hii").
+lab1_router_spec:route("Hiii").
+lab1_router_spec:route("Hiiii").
+lab1_router_spec:route("Hiiiii").
+
+lab1_router_spec:done("Hi").

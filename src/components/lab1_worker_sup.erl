@@ -16,12 +16,15 @@ init([]) ->
         period => MaxTime
     },
     Worker = #{
-        id => lab1_worker,
-        start => {lab1_worker, start_link, []}, 
+        id => lab1_worker_spec,
+        start => {lab1_worker_spec, start_link, []}, 
         restart => permanent,
         shutdown => 2000, 
         type => worker
     },
+
+    spawn_link(fun first_children/0),
+
     {ok, {SupFlags, [Worker]}}.
 
 start_worker() ->
@@ -29,3 +32,13 @@ start_worker() ->
 
 stop_worker(WorkerPid) ->
     supervisor:terminate_child(?MODULE, WorkerPid).
+
+
+first_children() ->
+    lists:map(
+        fun(_) ->
+            start_worker()
+        end,
+        lists:seq(1,100)
+    ),
+    ok.

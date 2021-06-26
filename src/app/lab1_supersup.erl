@@ -23,14 +23,6 @@ init([]) ->
 	    type => supervisor, 
 		modules => [lab1_worker_sup]
 	},
-    Router = #{
-		id => lab1_router,
-	    start => {lab1_router, start_link, []}, 
-		restart => permanent,
-	    shutdown => 2000, 
-		type => worker, 
-		modules => [lab1_router]
-	},
     Scaler = #{
 		id => lab1_scaler,
 	    start => {lab1_scaler, start_link, []}, 
@@ -38,6 +30,14 @@ init([]) ->
 	    shutdown => 2000, 
 		type => worker, 
 		modules => [lab1_scaler]
+	},
+    Router = #{
+		id => lab1_router_spec,
+	    start => {lab1_router_spec, start_link, []}, 
+		restart => permanent,
+	    shutdown => 2000, 
+		type => worker, 
+		modules => [lab1_router_spec]
 	},
     Stream1 = "/tweets/1",
     Collector1 = #{id => lab1_collector1,
@@ -50,5 +50,6 @@ init([]) ->
 	      restart => permanent, shutdown => 2000, type => worker,
 	      modules => [lab1_collector]},
 
-    ChildSpecs = [WorkerSup, Router, Scaler, Collector1, Collector2],
+    ChildSpecs = [WorkerSup, Router, Collector1],
+    % ChildSpecs = [WorkerSup, Scaler, Router, Collector1, Collector2],
     {ok, {SupFlags, ChildSpecs}}.
