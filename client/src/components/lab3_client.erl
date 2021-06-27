@@ -1,0 +1,112 @@
+-module(lab3_client).
+-behaviour(gen_server).
+
+-export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2]).
+-export([send_connect/1, send_disconnect/1, send_subscribe/2, send_unsubscribe/2, send_ack/2, send_lot/1]).
+
+-define(PORT, 8544).
+
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+init([]) ->
+    io:format("~p: ~p~n", ["Client", self()]),
+    {ok, Socket} = gen_tcp:connect(
+        "localhost", 
+        ?PORT, 
+        [{active, true}, {packet, 2}]
+    ),
+    {ok, #{socket => Socket}}.
+
+
+send_connect(SubId) ->
+    Message = #{
+        type => connect,
+        param => #{
+            subid => SubId
+        }
+    },
+    gen_server:cast(?MODULE, {send, Message}).
+
+send_disconnect(SubId) ->
+    Message = #{
+        type => disconnect,
+        param => #{
+            subid => SubId
+        }
+    },
+    gen_server:cast(?MODULE, {send, Message}).
+
+send_subscribe(SubId, Topic) ->
+    Message = #{
+        type => subscribe,
+        param => #{
+            topic => Topic,
+            subid => SubId
+        }
+    },
+    gen_server:cast(?MODULE, {send, Message}).
+
+send_unsubscribe(SubId, Topic) ->
+    Message = #{
+        type => unsubscribe,
+        param => #{
+            topic => Topic,
+            subid => SubId
+        }
+    },
+    gen_server:cast(?MODULE, {send, Message}).
+
+send_ack(SubId, Topic) ->
+    Message = #{
+        type => ack,
+        param => #{
+            topic => Topic,
+            subid => SubId
+        }
+    },
+    gen_server:cast(?MODULE, {send, Message}).
+
+send_lot(SubId) ->
+    Message = #{
+        type => lot,
+        param => #{
+            subid => SubId
+        }    
+    },
+    gen_server:cast(?MODULE, {send, Message}).
+
+
+handle_call(_, _, _State) ->
+    {noreply, _State}.
+
+handle_cast({send, Message}, State) ->
+    #{socket := Socket} = State,
+
+    % #{param := Param} = Message,
+    % NewParam = maps:merge(Param, #{subid => SubId}),
+    % NewMessage = maps:put(param, NewParam, Message),
+
+    Packet = serialize(Message),
+    % io:format("~p~n", [Packet]),
+
+    gen_tcp:send(Socket, Packet),
+    % inet:setopts(Socket, [{active, once}]),
+
+    {noreply, State}.
+
+handle_info({_, _, Packet}, _State) ->
+    Message = deserialize(Packet),
+    io:format("Client Received: ~p~n", [Message]),
+    
+    {noreply, _State};
+
+handle_info({tcp_closed, _}, _State) ->
+    io:format("Client: ~p~n", [tcp_closed]),
+    {stop, normal, _State}.
+
+serialize(Message) ->
+    jsx:encode(Message).
+
+deserialize(Packet) ->
+    jsx:decode(list_to_binary(Packet)).
