@@ -77,3 +77,8 @@ serialize(Message) ->
 
 deserialize(Packet) ->
     jsx:decode(list_to_binary(Packet)).
+
+
+
+
+% disconnect responds but does not erase from ets; ofc I've tested it separately

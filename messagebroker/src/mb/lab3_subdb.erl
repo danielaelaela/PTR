@@ -1,11 +1,10 @@
 -module(lab3_subdb).
 -behaviour(gen_server).
 
--export([start_link/0, init/1, connect/1, subscribe/1, unsubscribe/1, disconnect/1, handle_call/3, handle_cast/2, handle_info/2]).
+-export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2]).
+-export([connect/1, subscribe/1, unsubscribe/1, disconnect/1]).
 
 -define(SUBTABLE, subtable).
-
--define(LOGTIME, 1000).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -15,34 +14,29 @@ init([]) ->
 
     ets:new(?SUBTABLE, [set, named_table]),
     
-    erlang:start_timer(?LOGTIME, self(), timeout),
     {ok, {}}.
 
 connect(ConnectInfo) ->
-    gen_server:cast(?MODULE, {connect, ConnectInfo}).
+    gen_server:call(?MODULE, {connect, ConnectInfo}).
 
 subscribe(SubscribeInfo) ->
-    gen_server:cast(?MODULE, {subscribe, SubscribeInfo}).
+    gen_server:call(?MODULE, {subscribe, SubscribeInfo}).
 
 unsubscribe(UnsubscribeInfo) ->
-    gen_server:cast(?MODULE, {unsubscribe, UnsubscribeInfo}).
+    gen_server:call(?MODULE, {unsubscribe, UnsubscribeInfo}).
 
 disconnect(DisconnectInfo) ->
-    gen_server:cast(?MODULE, {disconnect, DisconnectInfo}).
+    gen_server:call(?MODULE, {disconnect, DisconnectInfo}).
 
 
-
-handle_call(_, _, State) ->
-    {noreply, State}.
-
-handle_cast({connect, ConnectInfo}, _State) ->
+handle_call({connect, ConnectInfo}, _, _State) ->
     {SubId, Port} = ConnectInfo,
 
     ets:insert(?SUBTABLE, {SubId, Port, []}),
 
-    {noreply, _State};
+    {reply, "Connected", _State};
 
-handle_cast({subscribe, SubscribeInfo}, _State) ->
+handle_call({subscribe, SubscribeInfo}, _, _State) ->
     {SubId, Topic} = SubscribeInfo,
 
     % subscribe 1.1
@@ -50,18 +44,19 @@ handle_cast({subscribe, SubscribeInfo}, _State) ->
     ets:update_element(?SUBTABLE, SubId, {3, [Topic | Topics]}),
 
     % subscribe 1.2
-    % lab3_tq:create_pointer(SubId, Topic),
+    Port = ets:lookup_element(?SUBTABLE, SubId, 2),
+    lab3_tq:subscribe(Topic, {Port}),
 
-    {noreply, _State};
+    {reply, "Subscribed", _State};
 
-handle_cast({unsubscribe, UnsubscribeInfo}, _State) ->
+handle_call({unsubscribe, UnsubscribeInfo}, _, _State) ->
     {SubId, Topic} = UnsubscribeInfo,
 
     custom_unsubscribe(SubId, Topic),
 
-    {noreply, _State};
+    {reply, "Unsubscribed", _State};
 
-handle_cast({disconnect, DisconnectInfo}, _State) ->
+handle_call({disconnect, DisconnectInfo}, _, _State) ->
     {SubId} = DisconnectInfo,
 
     Topics = ets:lookup_element(?SUBTABLE, SubId, 3),
@@ -71,22 +66,20 @@ handle_cast({disconnect, DisconnectInfo}, _State) ->
         end,
         Topics
     ),
-
     ets:delete(?SUBTABLE, SubId),
 
-    {noreply, _State}.
+    {reply, "Disconnected", _State}.
 
+handle_cast(_, State) ->
+    {noreply, State}.
 
-handle_info({timeout, _, _}, _State) ->
-    % PubInfo = ets:info(?PUBTABLE),
-    % {_, PubSize} = lists:keyfind(size, 1, PubInfo),
-    % io:format("PubDB size: ~p events", [PubSize]),
-
+handle_info(status, _State) ->
     io:format("SubDB: ~p~n", [ets:tab2list(?SUBTABLE)]),
-    
-    erlang:start_timer(?LOGTIME, self(), timeout),
-    {noreply, _State}.
+    {noreply, _State};
 
+handle_info(_, _State) ->
+    io:format("SubDB: what?~n", []),
+    {noreply, _State}.
 
 
 custom_unsubscribe(SubId, Topic) ->
@@ -95,7 +88,6 @@ custom_unsubscribe(SubId, Topic) ->
     ets:update_element(?SUBTABLE, SubId, {3, lists:delete(Topic, Topics)}),
 
     % unsubcribe 1.2
-    % lab3_tq:remove_pointer(SubId, Topic),
-    io:format("Unsubbed: ~p from ~p~n", [SubId, Topic]),
-
+    Port = ets:lookup_element(?SUBTABLE, SubId, 2),
+    lab3_tq:unsubscribe(Topic, {Port}),
     ok.
