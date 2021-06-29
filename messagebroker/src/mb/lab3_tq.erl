@@ -128,7 +128,7 @@ send_message(Topic, Counter, MessageId, SubIds) when MessageId < Counter ->
     Message = ets:lookup_element(Topic, MessageId, 2),
     lists:map(
         fun(SubId) -> 
-            lab3_conn:send_message(SubId, {Topic, Counter, Message}),
+            lab3_conn:send_message(SubId, {Topic, MessageId, Message})
             % io:format("TQ ~p: Sending message ~p to ~p~n", [Topic, Message, SubId])
         end,
         SubIds

@@ -13,7 +13,6 @@ init(Socket) ->
     {ok, #{socket => Socket}}.
 
 send_message(SubId, MessageInfo) ->
-    io:format("~p: Here!~n", [self()]),
     gen_server:cast(SubId, {send, MessageInfo}).
 
 
@@ -32,22 +31,17 @@ handle_cast({accept}, State) ->
 
 handle_cast({send, MessageInfo}, State) ->
     
-    io:format("~p: Here!!~n", [self()]),
-
     #{socket := Socket} = State,
-    {Topic, Counter, Message} = MessageInfo,
+    {Topic, Counter, Tweet} = MessageInfo,
 
     Message = #{
         type => message,
         param => #{
             topic => Topic,
-            message => Message,
+            message => Tweet,
             counter => Counter
         }
     },
-
-    io:format("~p: Here!~n", [self()]),
-
     Packet = serialize(Message),
 
     gen_tcp:send(Socket, Packet),
@@ -144,13 +138,19 @@ process(Message) ->
 
 
 process_matched({publisher, connect}, {PubId, Topics}) ->
-    lab3_pubdb:connect({PubId, self(), Topics});
+    NewTopics = lists:map(
+        fun(Topic) -> 
+            erlang:binary_to_atom(Topic) 
+        end, 
+        Topics
+    ),
+    lab3_pubdb:connect({PubId, self(), NewTopics});
 
 process_matched({publisher, disconnect}, {PubId}) ->
     lab3_pubdb:disconnect({PubId});
 
 process_matched({publisher, message}, {Topic, Tweet}) ->
-    lab3_tq:message(Topic, {Tweet});
+    lab3_tq:message(erlang:binary_to_atom(Topic), {Tweet});
 
 
 process_matched({client, connect}, {SubId}) ->
@@ -160,13 +160,13 @@ process_matched({client, disconnect}, {SubId}) ->
     lab3_subdb:disconnect({SubId});
 
 process_matched({client, subscribe}, {SubId, Topic}) ->
-    lab3_subdb:subscribe({SubId, Topic});
+    lab3_subdb:subscribe({SubId, erlang:binary_to_atom(Topic)});
 
 process_matched({client, unsubscribe}, {SubId, Topic}) ->
-    lab3_subdb:unsubscribe({SubId, Topic});
+    lab3_subdb:unsubscribe({SubId, erlang:binary_to_atom(Topic)});
 
-process_matched({client, ack}, {SubId, Topic}) ->
-    lab3_tq:ack(Topic, {SubId});
+process_matched({client, ack}, {_SubId, Topic}) ->
+    lab3_tq:ack(erlang:binary_to_atom(Topic), {self()});
 
 process_matched({client, lot}, {}) ->
     lab3_tq_sup:list_of_topics();

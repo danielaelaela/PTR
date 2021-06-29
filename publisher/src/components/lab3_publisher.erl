@@ -2,7 +2,7 @@
 -behaviour(gen_server).
 
 -export([start_link/0, init/1, handle_call/3, handle_cast/2, handle_info/2]).
--export([send_connect/2, send_disconnect/1, send_message/3]).
+-export([send_connect/2, send_disconnect/1, send_message/3, start_collector/1]).
 
 -define(PORT, 8544).
 
@@ -49,6 +49,9 @@ send_message(PubId, Topic, Tweet) ->
     },
     gen_server:cast(?MODULE, {send, Message}).
 
+start_collector(PubId) ->
+    publisher_supersup:start_collector(PubId).
+
 
 handle_call(_, _, _State) ->
     {noreply, _State}.
@@ -72,13 +75,9 @@ handle_info({tcp_closed, _}, _State) ->
     io:format("Client: ~p~n", [tcp_closed]),
     {stop, normal, _State}.
 
+
 serialize(Message) ->
     jsx:encode(Message).
 
 deserialize(Packet) ->
     jsx:decode(list_to_binary(Packet)).
-
-
-
-
-% disconnect responds but does not erase from ets; ofc I've tested it separately
